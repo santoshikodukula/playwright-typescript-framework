@@ -34,7 +34,7 @@ test("user can add an item to the cart", async ({page}) => {
 
 test("user can complete a checkout", async ({page}) => {
 
-    await page.goto("http://www.saucedemo.com");
+    await page.goto("https://www.saucedemo.com");
     await page.getByPlaceholder("Username").fill("standard_user");
     await page.getByPlaceholder("Password").fill("secret_sauce");
     await page.getByRole("button", {name: "Login"}).click();
