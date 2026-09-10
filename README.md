@@ -37,3 +37,11 @@ Requires Node.js 20+.
 - [ ] Page Object Model refactor
 - [ ] API tests
 - [ ] CI via GitHub Actions
+
+
+## Commit and push from terminal 
+
+git status                    # 1. see what changed — READ this
+git add .                     # 2. stage everything
+git commit -m "Add storageState auth setup with separate auth and shopping suites"
+git push  
