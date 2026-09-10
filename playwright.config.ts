@@ -42,12 +42,16 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "playwright/.auth/user.json",
-      },
-      dependencies: ["setup"],
+      name: 'herokuapp',
+      testMatch: /locators\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'saucedemo',
+      testMatch: /login|shopping\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/saucedemo.json' },
+      dependencies: ['setup'],
     },
   ],
 
