@@ -1,21 +1,21 @@
-import { test , expect } from "../fixtures/fixtures";
-
+import { test , expect } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test("valid user can log in", async ({loginPage}) => {
-    await loginPage.getByPlaceholder("Username").fill("standard_user");
-    await loginPage.getByPlaceholder("Password").fill("secret_sauce");
-    await loginPage.getByRole("button",{name: "Login"}).click();
-    await expect(loginPage.getByText("Products")).toBeVisible();
+test("valid user can log in", async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.loginAs("standard_user", "secret_sauce");
+    await expect(page.getByText("Products")).toBeVisible();
 });
 
 
-test("locked out user sees an error", async ({loginPage}) => {
+test("locked out user sees an error", async ({page}) => {
 
-    await loginPage.getByPlaceholder("Username").fill("locked_out_user");
-    await loginPage.getByPlaceholder("Password").fill("secret_sauce");
-    await loginPage.getByRole("button", {name: "Login"}).click();
-    await expect(loginPage.getByText("Epic sadface: Sorry, this user has been locked out.")).toBeVisible();
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.loginAs("locked_out_user", "secret_sauce");
+    await expect(loginPage.errorMessage).toBeVisible();
 
 });
