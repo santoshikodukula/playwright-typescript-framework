@@ -1,23 +1,21 @@
-import { test , expect } from "@playwright/test";
+import { test , expect } from "../fixtures/fixtures";
 
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test("valid user can log in", async ({page}) => {
-    await page.goto("https://www.saucedemo.com");
-    await page.getByPlaceholder("Username").fill("standard_user");
-    await page.getByPlaceholder("Password").fill("secret_sauce");
-    await page.getByRole("button",{name: "Login"}).click();
-    await expect(page.getByText("Products")).toBeVisible();
+test("valid user can log in", async ({loginPage}) => {
+    await loginPage.getByPlaceholder("Username").fill("standard_user");
+    await loginPage.getByPlaceholder("Password").fill("secret_sauce");
+    await loginPage.getByRole("button",{name: "Login"}).click();
+    await expect(loginPage.getByText("Products")).toBeVisible();
 });
 
 
-test("locked out user sees an error", async ({page}) => {
+test("locked out user sees an error", async ({loginPage}) => {
 
-    await page.goto("https://www.saucedemo.com");
-    await page.getByPlaceholder("Username").fill("locked_out_user");
-    await page.getByPlaceholder("Password").fill("secret_sauce");
-    await page.getByRole("button", {name: "Login"}).click();
-    await expect(page.getByText("Epic sadface: Sorry, this user has been locked out.")).toBeVisible();
+    await loginPage.getByPlaceholder("Username").fill("locked_out_user");
+    await loginPage.getByPlaceholder("Password").fill("secret_sauce");
+    await loginPage.getByRole("button", {name: "Login"}).click();
+    await expect(loginPage.getByText("Epic sadface: Sorry, this user has been locked out.")).toBeVisible();
 
 });
