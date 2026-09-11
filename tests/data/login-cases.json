@@ -1,0 +1,4 @@
+[
+  { "username": "standard_user", "password": "secret_sauce", "expected": "Products" },
+  { "username": "locked_out_user", "password": "secret_sauce", "expected": "Epic sadface: Sorry, this user has been locked out." }
+]
