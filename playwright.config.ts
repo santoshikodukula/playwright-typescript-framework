@@ -49,7 +49,7 @@ export default defineConfig({
     },
     {
       name: 'saucedemo',
-      testMatch: /login|shopping|login-data\.spec\.ts/,
+      testMatch: /login|shopping|login-data|secure-area\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/saucedemo.json' },
       dependencies: ['setup'],
     },
