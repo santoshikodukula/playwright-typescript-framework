@@ -1,15 +1,22 @@
 import { test as base, expect, Page } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
+import { InventoryPage } from "../pages/InventoryPage";
+import { CartPage } from "../pages/CartPage";
+import { CheckoutPage } from "../pages/CheckoutPage";
 
-export const test = base.extend<{ inventoryPage: Page, loginPage: Page }>({
+export const test = base.extend<{ inventoryPage: InventoryPage, loginPage: LoginPage, cartPage: CartPage, checkoutPage: CheckoutPage }>({
     inventoryPage: async ({ page }, use) => {
-        await page.goto("https://www.saucedemo.com/inventory.html");
-        await use(page);
+        await use(new InventoryPage(page));
     },
     loginPage: async ({ page }, use) => {
-        await page.goto("https://www.saucedemo.com");
-        await use(page);
+        await use(new LoginPage(page));
+    },
+    cartPage: async ({ page }, use) => {
+        await use(new CartPage(page));
+    },
+    checkoutPage: async ({ page }, use) => {
+        await use(new CheckoutPage(page));
     }
 });
-
 
 export { expect };

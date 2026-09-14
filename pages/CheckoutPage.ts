@@ -16,7 +16,11 @@ export class CheckoutPage {
         this.postalCodeInput = page.getByPlaceholder("Zip/Postal Code");
         this.continueButton = page.getByRole("button", {name: "Continue"});
         this.finishButton = page.getByRole("button", {name: "Finish"});
-        this.confirmationMessage = page.getByText("Thank you for your order!");
+        this.confirmationMessage = page.locator('[data-test="complete-header"]');
+    }
+
+    async goto() {
+        await this.page.goto("https://www.saucedemo.com/checkout-step-one.html");   //it's a legitimate entry point: a test focusing on checkout form validation could jump straight there instead of walking the whole journey
     }
 
     async fillUserDetails(firstName: string, lastName: string, postalCode: string) {
