@@ -4,7 +4,7 @@
 
 **TypeScript:** 1. Variables & types · 2. Functions & arrow functions · 3. Interfaces & objects · 4. Async/await · 5. Arrays & loops · 6. String methods · 7. Imports & exports
 
-**Playwright:** 8. Test anatomy & setup · 9. Locators & priority order · 10. Strict mode · 11. Auto-waiting & assertions · 12. iframes, dialogs, tabs · 13. storageState authentication
+**Playwright:** 8. Test anatomy & setup · 9. Locators & priority order · 10. Strict mode · 11. Auto-waiting & assertions · 12. iframes, dialogs, tabs · 13. storageState authentication · 14. Fixtures · 15. Data-driven tests · 16. Tags · 17. Page Object Model
 
 ---
 
@@ -292,6 +292,196 @@ run, which is the mitigation.
 > they sit in their own file with an empty `storageState` override. And the auth file must be
 > gitignored since it's a live session."
 
+## 14. Fixtures
+
+A fixture is a named piece of setup a test **requests by name**. `page` is a built-in fixture —
+that's why every test writes `async ({ page }) => {}`. Custom fixtures add your own names.
+
+```typescript
+// fixtures/fixtures.ts
+import { test as base, expect } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
+
+export const test = base.extend<{ loginPage: LoginPage }>({   // declare name + TYPE
+  loginPage: async ({ page }, use) => {                        // depends on `page`
+    await use(new LoginPage(page));                            // hand it to the test
+  },
+});
+
+export { expect };          // re-export so specs get both from one import
+```
+
+- `test as base` — rename Playwright's test, or you get *"Cannot redeclare `test`"*
+- `<{ name: Type }>` — the generic; repeat every fixture name and its type here
+- **`await use(x)` is the hinge:** setup above it, the test runs at it, teardown below it
+- All fixtures go in ONE `extend` call, comma-separated
+
+**In the spec — import `test` from YOUR file, never from `@playwright/test`:**
+```typescript
+import { test, expect } from "../fixtures/fixtures";
+
+test("checkout", async ({ inventoryPage, cartPage, checkoutPage }) => { ... });
+```
+Wrong import → *"Property 'checkoutPage' does not exist on type"*.
+
+**Fixtures provide TOOLS, not decisions.** Don't `goto` inside a fixture — all fixtures a test
+requests are created *before* the test body runs, so navigation there fires in the wrong order.
+The test decides the journey.
+
+**Fixtures vs hooks:** `beforeEach` applies to every test in scope whether it needs it or not.
+Fixtures run only for tests that ask, are typed, compose (one can depend on another), and are
+importable across files.
+
+## 15. Data-Driven Tests
+
+```typescript
+interface LoginCase { username: string; password: string; expected: string; }
+
+const cases: LoginCase[] = [
+  { username: "standard_user",  password: "secret_sauce", expected: "Products" },
+  { username: "locked_out_user", password: "secret_sauce", expected: "Epic sadface" },
+];
+
+for (const testCase of cases) {
+  test(`login as ${testCase.username}`, async ({ page }) => {    // template literal name!
+    ...
+  });
+}
+```
+- The loop wraps `test()` → N separate tests, run in parallel, reported individually
+- **Names must be unique** — build them from the data
+- Adding coverage = adding one line of data, not code
+
+**From JSON** (lets non-developers extend the data):
+```typescript
+import rawCases from "./data/login-cases.json";
+const cases: LoginCase[] = rawCases;      // type it — JSON gives no guarantees
+```
+Needs `"resolveJsonModule": true` in `tsconfig.json`, or you get
+*"Type {} must have a [Symbol.iterator]()"*.
+
+## 16. Tags
+
+```typescript
+test("checkout flow", { tag: "@smoke" }, async ({ page }) => { ... });
+test("checkout flow", { tag: ["@smoke", "@regression"] }, async ({ page }) => { ... });
+```
+The tag object goes **between** the name and the function.
+
+```bash
+npx playwright test --grep @smoke
+npx playwright test --grep-invert @slow
+npx playwright test --grep "@smoke|@critical"
+```
+Typical use: `@smoke` on every PR (fast feedback), full suite nightly.
+Smoke = the flows that, if broken, stop the release.
+
+## 17. Page Object Model
+
+One class per page. Locators become named properties, user actions become methods.
+
+```typescript
+// pages/LoginPage.ts
+import { Page, Locator } from "@playwright/test";
+
+export class LoginPage {
+  readonly page: Page;
+  readonly username: Locator;
+  readonly loginButton: Locator;
+
+  constructor(page: Page) {                                 // receives the page
+    this.page = page;
+    this.username = page.getByPlaceholder("Username");      // declare → define → use
+    this.loginButton = page.getByRole("button", { name: "Login" });
+  }
+
+  async goto() { await this.page.goto("https://www.saucedemo.com"); }
+
+  async loginAs(username: string, password: string) {
+    await this.username.fill(username);
+    await this.loginButton.click();
+  }
+}
+```
+
+**The three-step pattern:** declare at top (`readonly x: Locator`) → define in constructor →
+use in methods. **Every** locator the class touches — none created inline inside a method.
+
+**Assertions stay in the TEST, not the class:**
+```typescript
+await expect(checkoutPage.confirmationMessage).toContainText("Thank you");   // ✅ test
+async verifyConfirmation() { await expect(...); }                            // ❌ in class
+```
+A class method containing an assertion locks in one expectation, hides what's verified from
+the test, and usually gets a name that lies (`getX()` that returns nothing).
+
+**One class per page.** `InventoryPage` / `CartPage` / `CheckoutPage`, not one class covering
+the whole flow — otherwise it grows into a file nobody wants to open.
+
+**Action methods vs getter methods:**
+```typescript
+async addFirstItemToCart() { await this.addButton.first().click(); }        // acts
+async getProductCount(): Promise<number> { return this.items.count(); }     // reads
+```
+Prefer web-first assertions on exposed locators (`toHaveCount(6)`) — they retry. Use getters
+when you need the **value** for logic (comparing two states), not just to assert.
+
+**A test with POM + fixtures reads as a journey, with zero selectors:**
+```typescript
+test("checkout", async ({ inventoryPage, cartPage, checkoutPage }) => {
+  await inventoryPage.goto();
+  await inventoryPage.addFirstItemToCart();
+  await inventoryPage.openCart();
+  await cartPage.clickCheckout();
+  await checkoutPage.fillUserDetails("Test", "User", "12345");
+  await checkoutPage.clickFinish();
+  await expect(checkoutPage.confirmationMessage).toContainText("Thank you");
+});
+```
+
+**Structure:**
+```
+pages/       LoginPage.ts, InventoryPage.ts, CartPage.ts, CheckoutPage.ts
+fixtures/    fixtures.ts  (hands out page object instances)
+tests/       specs — thin, readable, no selectors
+```
+
+**A locator belongs to the page it appears on.** Don't put the inventory page's title on
+`LoginPage` just because a login test asserts on it. When a test spans pages it holds several
+page objects — that's normal, not a smell:
+```typescript
+test("valid user can log in", async ({ loginPage, inventoryPage }) => {
+  await loginPage.goto();
+  await loginPage.loginAs("standard_user", "secret_sauce");
+  await expect(inventoryPage.pageTitle).toHaveText("Products");   // assert on the page you LANDED on
+});
+```
+
+**Declare the minimum fixtures a test uses.** `async ({ inventoryPage })`, not
+`async ({ page, inventoryPage })` — Playwright only builds what you declare. If you keep
+needing raw `page`, that's a signal a locator is missing from a page object.
+
+**Naming:**
+- Locators: what a user sees (`cartBadge`), not the implementation (`shoppingCartBadgeSpan`)
+- Don't let a name lie — a property holding an `<a>` is `logoutLink`, not `logoutButton`;
+  a `getX()` that returns nothing is misnamed
+- Methods: user intent (`checkout()`) over mechanics (`clickCheckout()`)
+
+**Scoped locators beat `.first()`** when identity matters:
+```typescript
+this.page.locator(".inventory_item").first().locator("button")   // parent → child
+```
+
+**Page objects can hold any Playwright action:**
+```typescript
+async sortBy(option: string) {
+  await this.sortDropdown.selectOption({ label: option });    // label = readable in the test
+}
+```
+
+**Config, not hardcoding:** put `baseURL` in `playwright.config.ts` and use relative paths in
+page objects (`goto("/cart.html")`), so switching environments is one line.
+
 ---
 
 ## Error Decoder
@@ -313,6 +503,10 @@ run, which is the mitigation.
 | No tests found (in a file that has tests) | parse error — stray character breaks the file | read the file, look for typos |
 | Timeout waiting for an element after `goto` | landed on the login page — no valid session | check `storageState` + `dependencies`, or session expired |
 | Test with no `goto` fails on first locator | blank page — session ≠ navigation | add the `goto` |
+| Cannot redeclare block-scoped variable `test` | imported `test` AND declared it | `import { test as base }` |
+| Property 'xPage' does not exist on type | spec imports `test` from `@playwright/test` | import from your fixtures file |
+| Type {} must have a [Symbol.iterator]() | JSON import not resolving | add `"resolveJsonModule": true` to tsconfig |
+| Cannot find name 'LoginPage' (did you mean loginPage?) | class not imported | `import { LoginPage } from "../pages/LoginPage"` |
 
 ## Environment
 
