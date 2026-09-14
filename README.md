@@ -1,47 +1,54 @@
 # Playwright TypeScript Test Framework
 
-End-to-end test automation built with Playwright and TypeScript, running against
-[saucedemo.com](https://www.saucedemo.com).
+[![Playwright Tests](https://github.com/santoshikodukula/playwright-typescript-framework/actions/workflows/playwright.yml/badge.svg)](https://github.com/santoshikodukula/playwright-typescript-framework/actions/workflows/playwright.yml)
+
+End-to-end test automation built with Playwright and TypeScript, running against public practice sites.
+Tests run on every push via GitHub Actions.
 
 ## What's covered
+- **saucedemo** — login (data-driven), cart, five-page checkout flow
+- **the-internet** — iframes, JS dialogs, new tabs, dynamic loading, strict-mode filtering
+- **demoqa** — form validation, checkbox trees, select menus, click variants, double-click and right-click actions
 
-- **Login (positive)** — valid user reaches the products page
-- **Login (negative)** — locked-out user sees the expected error message
-- **Add to cart** — item is added and the cart badge updates
-- **Checkout** — full five-page flow from login to order confirmation
-
-Tests run across Chromium, Firefox, and WebKit.
+## Structure
+```
+pages/        Page objects — one class per page, locators as properties
+fixtures/     Custom fixtures that hand page objects to tests
+tests/        Specs — thin, readable, no selectors
+  auth.setup.ts    Authenticates once, saves session state
+  data/            JSON test data for data-driven suites
+```
 
 ## Running the tests
 
 ```bash
 npm install
 npx playwright install
-npx playwright test              # all tests, headless
-npx playwright test --headed     # watch the browser
-npx playwright test --ui         # UI Mode with trace viewer
-npx playwright show-report       # open the HTML report
+
+npx playwright test                    # all tests, headless
+npx playwright test --headed           # watch the browser
+npx playwright test --ui               # UI Mode with trace viewer
+npx playwright test --grep @smoke      # smoke suite only
+npx playwright show-report             # open the HTML report
 ```
 
-Requires Node.js 20+.
+Requires Node.js 20+ 
 
 ## Techniques used
 
-- Role- and placeholder-based locators over CSS selectors, for resilience
-- `testIdAttribute` configured to `data-test` to match the application's markup
-- Web-first assertions (`toBeVisible`, `toHaveText`) with automatic retry
-- Cross-browser execution via Playwright projects
+- **Page Object Model** — one class per page; assertions stay in tests
+- **Custom fixtures** — page objects delivered via `test.extend()`
+- **`storageState` auth** — log in once, reuse the session; auth tests run with a clean one
+- **Role- and label-based locators**, chosen to match each app's markup
+- **Web-first assertions** — no fixed waits anywhere
+- **Data-driven tests** from typed JSON
+- **Tags** — `@smoke` / `@regression` for running subsets
+- **CI** — GitHub Actions on every push, HTML report as an artifact
 
 ## Roadmap
-
-- [ ] Page Object Model refactor
-- [ ] API tests
-- [ ] CI via GitHub Actions
-
-
-## Commit and push from terminal 
-
-git status                    # 1. see what changed — READ this
-git add .                     # 2. stage everything
-git commit -m "Add storageState auth setup with separate auth and shopping suites"
-git push  
+- [x] Page Object Model
+- [x] Custom fixtures
+- [x] CI via GitHub Actions
+- [ ] API tests with Playwright's request context
+- [ ] Hybrid tests: API setup with UI verification
+- [ ] Parallel sharding in CI
