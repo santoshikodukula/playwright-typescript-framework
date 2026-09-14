@@ -43,15 +43,20 @@ export default defineConfig({
     },
     {
       name: 'herokuapp',
-      testMatch: /locators\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
+      testMatch: /(locators|secure-area)\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json',baseURL: 'https://the-internet.herokuapp.com' },
       dependencies: ['setup'],
     },
     {
       name: 'saucedemo',
-      testMatch: /login|shopping|login-data|secure-area\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/saucedemo.json' },
+      testMatch: /(login|shopping|login-data)\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/saucedemo.json',baseURL: 'https://www.saucedemo.com' },
       dependencies: ['setup'],
+    },
+    {
+      name:'api',
+      testDir: './tests/api',
+      use: {baseURL: 'https://restful-booker.herokuapp.com' },
     },
   ],
 

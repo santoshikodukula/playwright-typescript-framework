@@ -18,7 +18,7 @@ export class SecureAreaPage {
     }
 
     async goto() {
-        await this.page.goto("https://the-internet.herokuapp.com/login");
+        await this.page.goto("/login");
     }
 
     async loginAs(username: string, password: string) {

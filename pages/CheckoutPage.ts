@@ -1,4 +1,4 @@
-import {Page, Locator, expect} from "@playwright/test";
+import {Page, Locator } from "@playwright/test";
 
 export class CheckoutPage {
     readonly page: Page;
@@ -20,7 +20,7 @@ export class CheckoutPage {
     }
 
     async goto() {
-        await this.page.goto("https://www.saucedemo.com/checkout-step-one.html");   //it's a legitimate entry point: a test focusing on checkout form validation could jump straight there instead of walking the whole journey
+        await this.page.goto("/checkout-step-one.html");   //it's a legitimate entry point: a test focusing on checkout form validation could jump straight there instead of walking the whole journey
     }
 
     async fillUserDetails(firstName: string, lastName: string, postalCode: string) {
