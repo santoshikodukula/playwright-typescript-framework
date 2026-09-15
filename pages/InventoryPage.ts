@@ -25,9 +25,11 @@ export class InventoryPage {
         await this.page.goto("/inventory.html");
     }
 
-    async addFirstItemToCart() {
-        const firstItemAddButton = this.page.locator(".inventory_item").first().locator("button");
-        await firstItemAddButton.click();
+    async addFirstItemToCart(productName: string) {
+        await this.page.getByTestId("inventory-item")
+            .filter({hasText: productName})
+            .getByRole("button", {name: "Add to cart"})
+            .click();
     }
 
     async openCart() {
